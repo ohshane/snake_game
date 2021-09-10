@@ -39,7 +39,10 @@ while True:
 
     screen.fill((255, 255, 255))
     pygame.draw.rect(screen, (255, 0, 0), pygame.Rect(p.x, p.y, BLOCK_SIZE, BLOCK_SIZE))
-
     pygame.display.update()
+
+    if p.x > 640 - BLOCK_SIZE or p.x < 0 or p.y > 480 - BLOCK_SIZE or p.y < 0:
+        pygame.quit()
+        sys.exit()
 
     clock.tick(SPEED)
