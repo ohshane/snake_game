@@ -1,6 +1,8 @@
 import sys
 import random
 import pygame
+from pygame.constants import K_LEFT
+from pygame.cursors import arrow
 from pygame.math import Vector2
 
 
@@ -60,7 +62,8 @@ class SnakeGame:
                 raise ValueError
             self.length += length
 
-    def __init__(self, *, size=(32, 24), speed=SPEED):
+    def __init__(self, *, size=(32, 24), speed=SPEED, debug=False):
+        self.debug = debug
         self.board = Vector2(size)
         self.speed = speed
         self.snake = SnakeGame._Snake(self.board // 2)
@@ -165,8 +168,17 @@ class SnakeGame:
 
 
     def play_scene(self):
-        if pygame.event.get():
-            for event in pygame.event.get():
+        if self.debug and self.game_over:
+            import time
+            time.sleep(0.5)
+            self.snake.__init__(self.board // 2)
+            self.game_over = False
+            self.score = 0
+
+        events = pygame.event.get()
+        arrow_keydown = False
+        if events:
+            for event in events:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
@@ -175,25 +187,32 @@ class SnakeGame:
                     if event.key == pygame.K_ESCAPE:
                         pygame.quit()
                         sys.exit()
-                    elif event.key == pygame.K_UP:
-                        self.snake.move(UP)
-                    elif event.key == pygame.K_RIGHT:
-                        self.snake.move(RIGHT)
-                    elif event.key == pygame.K_DOWN:
-                        self.snake.move(DOWN)
-                    elif event.key == pygame.K_LEFT:
-                        self.snake.move(LEFT)
+
+                    if not arrow_keydown and event.key in [pygame.K_UP, pygame.K_RIGHT, pygame.K_DOWN, pygame.K_LEFT]:
+                        arrow = None
+                        if event.key == pygame.K_UP:
+                            arrow = UP
+                        elif event.key == pygame.K_RIGHT:
+                            arrow = RIGHT
+                        elif event.key == pygame.K_DOWN:
+                            arrow = DOWN
+                        elif event.key == pygame.K_LEFT:
+                            arrow = LEFT
+                        if self.snake.direction == arrow or (self.snake.direction + arrow) == STAY:
+                            arrow_keydown = self.snake.direction
+                            self.snake.move(self.snake.direction)
+                        else:
+                            arrow_keydown = arrow
+                            self.snake.move(arrow)
         else:
             self.snake.move(self.snake.direction)
         
         if self.is_game_over():
             self.game_over = True
             self.snake.move(STAY)
-            import time
-            time.sleep(1)
-            self.__init__()
 
         if self.is_contact(self.obstacle['apple']):
+            self.obstacle['apple'] = self.generate_apple()
             self.snake.change_length(1)
             self.score += 1
 
@@ -204,6 +223,16 @@ class SnakeGame:
 
 
 if __name__ == '__main__':
-    game = SnakeGame()
+    import math
+    count = 0
+    debug = True
+    game = SnakeGame(speed=math.inf, debug=debug)
     while True:
+        count += 1
         game_over, score = game.play_scene()
+        print(count, game_over, score)
+        if game_over:
+            print(f"score: {score}")
+            count = 0
+            if not debug:
+                break
